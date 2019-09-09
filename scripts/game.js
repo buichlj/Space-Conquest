@@ -23,7 +23,7 @@ var shipTypes = [new ShotGunBoatShip(), new FighterShip()];
 var modals = MODAL_MODULE;
 
 function init() {
-	modals.register_modal('buildShip', '.modal_buildShips');
+	modals.register_modal('buildShip', '.modal_buildShips', onBuildShipModalOpen);
 	modals.register_modal('sendShips', '.modal_sendShips');
 	modals.init_modal();
 
@@ -66,11 +66,6 @@ function init() {
 	//document.getElementsByName("sendShips")[0].disabled = true;
 	document.getElementsByName("upgradeTech")[0].disabled = true;
 	document.getElementsByName("decreaseTech")[0].disabled = true;
-
-}
-
-function testFunc() {
-	console.log("test");
 }
 
 function calculateSpaceLaneDistance(planetFrom, planetTo) {
@@ -89,11 +84,9 @@ function calculateSpaceLaneDistance(planetFrom, planetTo) {
 function mouseListener(e) {
 	// Get the current mouse position
 	var r = canvas.getBoundingClientRect(),
-		x = e.clientX - r.left, y = e.clientY - r.top;
+		x = e.clientX - r.left,
+		y = e.clientY - r.top;
 	var clickedPlanet = false;
-
-	//ctx.clearRect(0, 0, canvas.width, canvas.height);
-	selectedPlanetIndex = -1;
 
 	for (var i = planets.length - 1, b; b = planets[i]; i--) {
 		if (x >= b.x - planetDiameter && x <= b.x + planetDiameter * 2 &&
@@ -106,8 +99,8 @@ function mouseListener(e) {
 	}
 
 	// Draw the rectangles by Z (ASC)
-	if (clickedPlanet || !clickedPlanet && selectedPlanetIndex != -1) {
-		if (!clickedPlanet && selectedPlanetIndex)
+	if (clickedPlanet || !clickedPlanet && selectedPlanetIndex) {
+		if (!clickedPlanet && selectedPlanetIndex != null)
 			selectedPlanetIndex = null;
 		drawMap();
 		refreshSelectedPlanetInfo(planets[selectedPlanetIndex]);
@@ -115,8 +108,12 @@ function mouseListener(e) {
 }
 
 function refreshSelectedPlanetInfo(planet) {
-	var planetsIown = planets.filter((p) => p.owner === currentPlayer).map((p) => { return p.id; });
-	var planetsWhereIHaveFleets = fleets.filter((f) => f.owner === currentPlayer && !f.remainingTransit).map((f) => { return f.location });
+	var planetsIown = planets.filter((p) => p.owner === currentPlayer).map((p) => {
+		return p.id;
+	});
+	var planetsWhereIHaveFleets = fleets.filter((f) => f.owner === currentPlayer && !f.remainingTransit).map((f) => {
+		return f.location
+	});
 
 	document.getElementsByName("planetName")[0].value = planet.name;
 
@@ -132,10 +129,9 @@ function refreshSelectedPlanetInfo(planet) {
 			fleetToString(fleets.filter((f) => f.owner === 'Native' && f.location === planet.id && f.remainingTransit < 1)[0]);
 
 		var techLevelsAllowBuilding = shipTypes.map((x) => x.techLevel);
-		if (selectedPlanetIndex && techLevelsAllowBuilding.includes(planets[selectedPlanetIndex].techLevel)) {
+		if (selectedPlanetIndex != null && techLevelsAllowBuilding.includes(planets[selectedPlanetIndex].techLevel)) {
 			document.getElementsByName("buildShip")[0].disabled = false;
-		}
-		else {
+		} else {
 			document.getElementsByName("buildShip")[0].disabled = true;
 		}
 	} else {
@@ -154,101 +150,7 @@ function refreshSelectedPlanetInfo(planet) {
 function fleetToString(fleet) {
 	if (!fleet)
 		return "none";
-	return "F:" + fleet.ships.fighter + ",Sb:" + fleet.ships.shotgunBoat;
-}
-
-function drawMap() {
-	//clear the map by drawing the background color over the whole thing
-	ctx.beginPath();
-	ctx.rect(0, 0, maxX, maxY);
-	ctx.fillStyle = "#eee";
-	ctx.fill();
-	ctx.closePath();
-
-	if (selectedPlanetIndex != null) {
-		drawSpaceLanes();
-	}
-
-	//draw Planets
-	for (var i = 0; i < maxNumberPlanets; i++) {
-		drawPlanet(planets[i], i === selectedPlanetIndex);
-	}
-
-	//draw Fleets 
-	var playerFleets = fleets.filter((f) => f.owner === currentPlayer && !f.remainingTransit);
-	for (var i = 0; i < playerFleets.length; i++) {
-		var planet = planets.filter((p) => p.id === playerFleets[i].location)[0];
-		drawFleet(playerFleets[i], planet);
-
-		var enemyFleets = fleets.filter((f) => f.location === playerFleets[i].location && !f.remainingTransit);
-
-		enemyFleets.forEach((ef) => drawFleet(ef, planet));
-	}
-
-}
-
-function drawSpaceLanes() {
-	var spaceLanesToShow = spaceLanes.filter((sp) => sp.planetTo.id === selectedPlanetIndex);
-
-	spaceLanesToShow.forEach((sp) => {
-		// Dashed line
-		ctx.beginPath();
-		ctx.setLineDash([5, 15]);
-		ctx.strokeStyle = "green";
-		ctx.moveTo(sp.planetFrom.x, sp.planetFrom.y);
-		ctx.lineTo(sp.planetTo.x, sp.planetTo.y);
-		ctx.stroke();
-
-		//Draw distances
-		ctx.fillStyle = "black";
-		ctx.textAlign = "center";
-		ctx.font = "13px Arial";
-		ctx.fillText(sp.transitTime, sp.planetFrom.x + planetDiameter, sp.planetFrom.y + 5);
-	});
-
-}
-
-function drawFleet(fleet, planet) {
-	var dx;
-	var dy;
-	ctx.beginPath();
-	switch (fleet.owner) {
-		case 'Red':
-			ctx.fillStyle = "red";
-			dx = -4;
-			dy = -4;
-			break;
-		case 'Blue':
-			ctx.fillStyle = "blue";
-			dx = 4;
-			dy = -4;
-			break;
-		default:
-			ctx.fillStyle = "white";
-			dx = 0;
-			dy = -2;
-			break;
-	}
-	ctx.arc(planet.x + dx, planet.y + dy, 2, 0, Math.PI * 2, false);
-	ctx.fill();
-	ctx.closePath();
-
-}
-
-function drawPlanet(planet, selected) {
-	ctx.beginPath();
-	ctx.arc(planet.x, planet.y, planetDiameter / 2, 0, Math.PI * 2, false);
-	if (selected)
-		ctx.fillStyle = "green";
-	else
-		ctx.fillStyle = "gray";
-	ctx.fill();
-	ctx.closePath();
-
-	ctx.fillStyle = "black";
-	ctx.textAlign = "center";
-	ctx.font = "12px Arial";
-	ctx.fillText(planet.name, planet.x, planet.y - 15);
+	return fleet.ships.toString();
 }
 
 function createRandomPlanets(name) {
@@ -264,7 +166,8 @@ function createRandomPlanets(name) {
 		planet.income = 100 * planet.techLevel;
 		planet.owner = 'Native';
 		if (planet.techLevel > 4) {
-			var ships = new Ships(getRndInteger(1, planet.techLevel), 0);
+			var ships = new Ships(shipTypes);
+			ships.add(new FighterShip(), getRndInteger(1, planet.techLevel));
 			var fleet = new Fleet('Native', i, 0, ships);
 			fleets.push(fleet);
 		}
@@ -310,7 +213,8 @@ function createRandomHomePlanet(playerId) {
 	planets[index].owner = playerId;
 	planets[index].techLevel = 7;
 	planets[index].income = 100 * planets[index].techLevel;
-	var ships = new Ships(10, 0);
+	var ships = new Ships(shipTypes);
+	ships.add(new FighterShip(), 10);
 	var fleet = new Fleet(playerId, index, 0, ships);
 	fleets.push(fleet);
 
@@ -321,8 +225,7 @@ function createRandomHomePlanet(playerId) {
 
 
 
-function processBattle(fleet1, fleet2) {
-}
+function processBattle(fleet1, fleet2) { }
 
 function advanceOneTurn() {
 	if (currentTurn != 0) {
@@ -358,5 +261,68 @@ function advanceOneTurn() {
 	drawMap();
 }
 
+function getCurrentPlayerFleetOnCurrentPlanet() {
+	var fleet = fleets.filter((f) => f.owner === currentPlayer && !f.remainingTransit && f.location === selectedPlanetIndex);
+	if (fleet)
+		return fleet[0];
+	else
+		return fleet;
+}
 
+function onBuildShipModalOpen() {
+	var currentPlayerIndex = players.findIndex((p) => p.id === currentPlayer);
 
+	var select = document.getElementById("buildShipSelect");
+	select.onchange = function (e) {
+		var shipCost = document.getElementById("shipCost");
+		shipCost.innerHTML = shipTypes.filter((s) => s.name === e.srcElement.value)[0].cost;
+	}
+
+	//For every unique ship type, we are going to enter them into the dropdown selection so that
+	// you can choose to make that type of ship.
+	shipTypes.forEach((s) => {
+		var opt = document.createElement('option');
+		opt.appendChild(document.createTextNode(s.name));
+		opt.value = s.name;
+		select.appendChild(opt);
+	})
+	select.selectedIndex = 0;
+
+	var slider = document.getElementById("myRange");
+	var output = document.getElementById("shipBuildCount");
+	output.innerHTML = slider.value;
+
+	slider.oninput = function () {
+		var output = document.getElementById("shipBuildCount");
+		output.innerHTML = this.value;
+	}
+
+	var planetNameHeader = document.getElementById("buildShipPlanet");
+	planetNameHeader.textContent = planets[selectedPlanetIndex].name;
+
+	var creditsBuildShips = document.getElementById("creditsBuildShips");
+	creditsBuildShips.value = players[currentPlayerIndex].credits;
+
+	var buildShipButton = document.getElementById("buildShipButton");
+	buildShipButton.onclick = function () {
+		var slider = document.getElementById("myRange");
+
+		var currentPlayerIndex = players.findIndex((p) => p.id === currentPlayer);
+		var selectedShipType = shipTypes.filter((s) => s.name === e.srcElement.value)[0];
+		var totalCost = slider.value * selectedShipType.cost;
+
+		if (totalCost < players[currentPlayerIndex].credits) {
+			//Pay for the ships we built
+			players[currentPlayerIndex].credits -= totalCost;
+			var creditsBuildShips = document.getElementById("creditsBuildShips");
+			creditsBuildShips.value = players[currentPlayerIndex].credits;
+
+			//See if we have a fleet on this planet right now, if so add to that fleet
+			var myFleetHere = getCurrentPlayerFleetOnCurrentPlanet();
+			if (myFleetHere) {
+				myFleetHere
+			}
+			//if not, make a new fleet at this planet
+		}
+	}
+}

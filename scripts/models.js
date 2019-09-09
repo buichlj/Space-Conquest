@@ -5,9 +5,29 @@ function Fleet(owner, location, remainingTransit, ships) {
     this.ships = ships;
 }
 
-function Ships(fighter, shotgunBoat) {
-    this.fighter = fighter;
-    this.shotgunBoat = shotgunBoat;
+class Ships {
+    constructor(shipTypes) {
+        this.shipTypes = shipTypes;
+        this.shipCounts = {};
+        this.shipTypes.forEach((s) => {
+            this.shipCounts[s.name] = 0;
+        })
+    }
+
+    add(shipType, number) {
+        this.shipCounts[shipType] += number;
+    }
+
+    remove(shipType, number) {
+        this.shipCounts[shipType] += number;
+    }
+
+    toString() {
+        var fleetString = "";
+        this.shipTypes.forEach((s) => {
+            fleetString += s.abbreviation + ":" + this.shipCounts[s.name] + ",";
+        })
+    }
 }
 
 function Player(id) {
@@ -16,22 +36,28 @@ function Player(id) {
 
 }
 
+// function ShipType(name, attack, hp, phase, durability, cost, techLevel, specialAttack) {
+//     this.name = name;
+//     this.attack = attack;
+//     this.hp = hp;
+//     this.phase = phase;
+//     this.durability = durability;
+//     this.cost = cost;
+//     this.techLevel = techLevel;
+//     this.specialAttack = specialAttack;
+// }
+
 function SpaceLane(planetFrom, planetTo, transitTime) {
     this.planetFrom = planetFrom;
     this.planetTo = planetTo;
     this.transitTime = transitTime;
 }
 
-// ShipType Enum
-const ShipType = {
-    Fighter: "Fighter",
-    ShotgunBoat: "ShotgunBoat"
-};
-
 class Ship {
-    constructor(count, name, attack, hp, phase, durability, cost, techLevel, specialAttack) {
+    constructor(count, name, abbreviation, attack, hp, phase, durability, cost, techLevel, specialAttack) {
         this.count = count;
         this.name = name;
+        this.abbreviation = abbreviation;
         this.attack = attack;
         this.hp = hp;
         this.phase = phase;
@@ -44,12 +70,12 @@ class Ship {
 
 class FighterShip extends Ship {
     constructor(count) {
-        super(count, ShipType.Fighter, 7, 5, 3, 5, 25, 7, 0);
+        super(count, "Fighter", "F", 7, 5, 3, 5, 25, 7, 0);
     }
 }
 
 class ShotGunBoatShip extends Ship {
     constructor(count) {
-        super(count, ShipType.ShotGunBoatShip, 10, 3, 2, 5, 50, 7, 0);
+        super(count, "ShotgunBoat", "Sb", 10, 3, 2, 5, 50, 7, 0);
     }
 }
